@@ -1,1 +1,1 @@
-# mjr-serverless-aws-lambda
+# mjr-intro-to-react
