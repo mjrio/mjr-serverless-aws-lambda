@@ -324,10 +324,15 @@ service: my-service
 provider:
   name: aws
   runtime: nodejs8.10
+  timeout: 10 # timeout for all function
+  environment:
+    MONGODB_URI: ${env:MONGODB_URI}
 
 functions:
   hello:
     handler: handler.hello
+    memorySize: 128
+    timeout: 200
     events:
       - http:
         path: hello
@@ -335,7 +340,12 @@ functions:
      - schedule:
         rate: rate(5 minutes)
         enabled: true
+  function2:
+    ...
 ```
+
+Simplifies cloud configuration.
+
 
 <!-- prettier-ignore -->
 ***
@@ -381,9 +391,87 @@ serverless logs -f hello -t
 serverless remove
 ```
 
+---
 
+# Advanced Serverless Framework
+> More the just a function wrapper
 
+<!-- prettier-ignore -->
+***
 
+## Security
+
+AWS - IAMRoles
+
+```
+provider:
+  name: aws
+  runtime: nodejs6.10
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - s3:*
+      Resource: "arn:aws:s3:::${self:custom.bucket}/*"
+    - Effect: Allow
+      Action: s3:ListBucket
+      Resource: "arn:aws:s3:::${self:custom.bucket}"
+```
+
+<!-- prettier-ignore -->
+***
+
+## Resources
+
+AWS - Resources
+
+```
+resources:
+  Resources:
+    S3BucketBackup:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: "${self:custom.bucket}"
+    usersTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: usersTable
+        AttributeDefinitions:
+          - AttributeName: email
+            AttributeType: S
+        KeySchema:
+          - AttributeName: email
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+```
+
+See also [Serverless Resources](https://serverless.com/framework/docs/providers/aws/guide/resources/)
+
+<!-- prettier-ignore -->
+***
+
+## Plugings
+
+> Many 3th aprty plugins available
+
+- serverless-offline
+- serverless-webpack
+- serverless-plugin-warmup
+- serverless-plugin-typescript
+- serverless-dotenv-plugin
+- serverless-plugin-aws-alerts
+- serverless-apig-s3
+- serverless-api-cloudfront
+
+```bash
+# command line
+serverless plugin list
+serverless plugin install --name serverless-stage-manager
+
+```
+
+<!-- prettier-ignore -->
 ***
 
 ## Serverless Code Patterns
@@ -393,6 +481,43 @@ serverless remove
 - Monolithic pattern (all in one)
 
 [See more](https://serverless.com/blog/serverless-architecture-code-patterns/)
+
+---
+
+# AWS Step Functions
+
+> If serverless functions are stateless, how do I manage state?
+
+See also Azure Logic Apps
+
+<!-- prettier-ignore -->
+***
+
+
+## Problems
+
+- I want to sequence functions
+- I want to run function in parallel
+- I want to selct functions based on data
+- I want to retry functions
+- I want to try/catch/finally
+- I have code that runs for hours
+
+<!-- prettier-ignore -->
+***
+
+## AWS Step functions
+
+<img src="./images/step-functions2.png" width="1000px">
+
+Makes it seay to coordinate the components of distributed application
+
+<!-- prettier-ignore -->
+***
+
+### AWS Step functions: Use-case
+
+<img src="./images/step-functions-usecase.png" width="1200px">
 
 ---
 
@@ -535,48 +660,61 @@ Check out [servers.lol](https://servers.lol) for more.
 <!-- prettier-ignore -->
 ***
 
-## Conclusion
+---
 
-> Serverless is not a silver bullet. The gains you can obtain from it depend on your knowledge of it. The good part is that the barrier to entry is so low that you should be proficient in no time.
+# Performance testing
+> Can we get the performance
 
+<!-- prettier-ignore -->
+***
+
+### Lambda
+
+<img src="./images/load-lambda.png" width="1000px">
+<br>
+Test performed by https://www.blazemeter.com/
+
+<!-- prettier-ignore -->
+***
+
+### Now (fastify x 2 instances)
+
+<img src="./images/load-now.png" width="1000px">
+
+<!-- prettier-ignore -->
+***
+
+### Lambda - Response time
+
+<img src="./images/load-lambda-min-max.png" width="1000px">
+
+Lots of high peeks
+
+<!-- prettier-ignore -->
+***
+
+### Now - Response time
+
+<img src="./images/load-now-min-max.png" width="1000px">
+
+Higher maximum but more stable
+
+<!-- prettier-ignore -->
+***
+
+### Lambda/Now - MongoDB
+
+<img src="./images/load-mongodb-lambda.png" width="500px">
+<img src="./images/load-mongodb-now.png" width="493px">
+
+Lambda will use more connections
 
 
 ---
 
-# AWS Step Functions
+# Conclusion
 
-> If serverless functions are stateless, how do I manage state?
-
-See also Azure Logic Apps
-
-<!-- prettier-ignore -->
-***
-
-
-## Problems
-
-- I want to sequence functions
-- I want to run function in parallel
-- I want to selct functions based on data
-- I want to retry functions
-- I want to try/catch/finally
-- I have code that runs for hours
-
-<!-- prettier-ignore -->
-***
-
-## AWS Step functions
-
-<img src="./images/step-functions2.png" width="1000px">
-
-Makes it seay to coordinate the components of distributed application
-
-<!-- prettier-ignore -->
-***
-
-### AWS Step functions: Use-case
-
-<img src="./images/step-functions-usecase.png" width="1200px">
+> Serverless is not a silver bullet. The gains you can obtain from it depend on your knowledge of it. The good part is that the barrier to entry is so low that you should be proficient in no time.
 
 ---
 
@@ -592,6 +730,7 @@ Makes it seay to coordinate the components of distributed application
 - [THE SERVERLESS SERIES — What Is Serverless](https://hackernoon.com/the-serverless-series-what-is-serverless-d651fbacf3f4)
 - [GitHub - Serverless service with basic MongoDB](https://github.com/adnanrahic/building-a-serverless-rest-api-with-nodejs)
 - [GitHub - Serverless service with basic MongoDB Stitch](https://github.com/adnanrahic/building-a-serverless-rest-api-with-nodejs-and-mongodb-stitch)
+- [The hidden costs of serverless](https://medium.com/@amiram_26122/the-hidden-costs-of-serverless-6ced7844780b)
 
 ---
 
